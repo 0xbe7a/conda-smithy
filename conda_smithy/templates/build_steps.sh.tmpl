@@ -39,6 +39,8 @@ CONDARC
 {%- set BUILD_CMD="CONDA_SOLVER=libmamba conda build" %}
 {%- elif conda_build_tool == "conda-build+classic" %}
 {%- set BUILD_CMD="CONDA_SOLVER=classic conda build" %}
+{%- elif conda_build_tool == "rattler-build" %}
+{%- set BUILD_CMD="rattler-build" %}
 {%- else %}
 {%- set BUILD_CMD="conda build" %}
 {%- endif %}
@@ -94,11 +96,29 @@ if [[ "${BUILD_WITH_CONDA_DEBUG:-0}" == 1 ]]; then
     # Drop into an interactive shell
     /bin/bash
 else
+    {% if conda_build_tool != "rattler-build" %}
     {{ BUILD_CMD }} "${RECIPE_ROOT}" -m "${CI_SUPPORT}/${CONFIG}.yaml" \
         --suppress-variables ${EXTRA_CB_OPTIONS:-} \
         --clobber-file "${CI_SUPPORT}/clobber_${CONFIG}.yaml" \
         --extra-meta flow_run_id="${flow_run_id:-}" remote_url="${remote_url:-}" sha="${sha:-}"
+    {% else %}
+    ## rattler-build build -r recipe -m .ci_support/linux_64_.yaml
+    export CONDA_BLD_PATH="${FEEDSTOCK_ROOT}/output"
+    {{ BUILD_CMD }} build -r "${RECIPE_ROOT}" -m "${CI_SUPPORT}/${CONFIG}.yaml"
+        # --suppress-variables ${EXTRA_CB_OPTIONS:-} \
+        # --clobber-file "${CI_SUPPORT}/clobber_${CONFIG}.yaml" \
+        # --extra-meta flow_run_id="${flow_run_id:-}" remote_url="${remote_url:-}" sha="${sha:-}" \
+        # --extra-meta conda-forge-build="rattler-build"
 
+
+    # is_valid_feedstock_output currently assumes that `noarch`
+    # and a folder for the native platform (e.g. `linux-64`) are present in `output`.
+    # rattler-build only produces folders for architecures that it has built packages for.
+    # Thus we need to create the missing folders.
+    mkdir -p "${CONDA_BLD_PATH}/noarch"
+    mkdir -p "${CONDA_BLD_PATH}/${HOST_PLATFORM}"
+
+    {% endif %}
     {%- if conda_forge_output_validation %}
     ( startgroup "Validating outputs" ) 2> /dev/null
 

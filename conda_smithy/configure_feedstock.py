@@ -2050,6 +2050,7 @@ def _load_forge_config(forge_dir, exclusive_config_file, forge_yml=None):
         "conda-build",  # will run vanilla conda-build, with system configured / default solver
         "conda-build+conda-libmamba-solver",  # will run vanilla conda-build, with libmamba solver
         "conda-build+classic",  # will run vanilla conda-build, with the classic solver
+        "rattler-build",  # will run 'rattler-build'
     )
     assert config["conda_build_tool"] in valid_build_tools, (
         f"Invalid conda_build_tool: {config['conda_build_tool']}. "
@@ -2060,6 +2061,8 @@ def _load_forge_config(forge_dir, exclusive_config_file, forge_yml=None):
         config["conda_build_tool_deps"] = "conda-build boa"
     elif config["conda_build_tool"] == "conda-build+conda-libmamba-solver":
         config["conda_build_tool_deps"] = "conda-build conda-libmamba-solver"
+    elif config["conda_build_tool"] == "rattler-build":
+        config["conda_build_tool_deps"] = "rattler-build"
     else:
         config["conda_build_tool_deps"] = "conda-build"
 
